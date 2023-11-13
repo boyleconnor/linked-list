@@ -14,6 +14,17 @@ impl<T> List<T> {
         });
         self.head = Link::More(new_node);
     }
+
+    pub fn pop(&mut self) -> Option<T> {
+        match mem::replace(&mut self.head, Link::Empty) {
+            Link::More(boxed_node) => {
+                self.head = boxed_node.next;
+                Some(boxed_node.element)
+            }
+            Link::Empty => None
+        }
+    }
+
     pub fn new() -> Self {
         List { head: Link::Empty }
     }
@@ -51,4 +62,12 @@ fn test_list_push() {
     list.push(12);
     list.push(8);
     println!("{:?}", list);
+}
+
+#[test]
+fn test_list_pop() {
+    let mut list: List<i32> = List { head: Link::More(Box::from(Node { element: 32, next: Link::More(Box::from(Node { element: 23, next: Link::Empty })) })) };
+    assert_eq!(list.pop(), Some(32));
+    assert_eq!(list.pop(), Some(23));
+    assert_eq!(list.pop(), None);
 }
