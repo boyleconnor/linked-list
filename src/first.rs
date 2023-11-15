@@ -42,32 +42,35 @@ enum Link<T> {
     Empty
 }
 
-#[test]
-fn test_list_manual() {
-    let list: List<i32> = List {
-        head: Link::More(Box::new(Node {
-            element: 1,
-            next: Link::More(Box::new(Node {
-                element: 2,
-                next: Link::Empty
-            }))
-        }))
-    };
-    println!("{:?}", list);
-}
+#[cfg(test)]
+mod test {
+    use super::List;
+    #[test]
+    fn basics() {
+        let mut list = List::new();
 
-#[test]
-fn test_list_push() {
-    let mut list: List<i32> = List { head: Link::Empty };
-    list.push(12);
-    list.push(8);
-    println!("{:?}", list);
-}
+        // Check empty list behaves right
+        assert_eq!(list.pop(), None);
 
-#[test]
-fn test_list_pop() {
-    let mut list: List<i32> = List { head: Link::More(Box::from(Node { element: 32, next: Link::More(Box::from(Node { element: 23, next: Link::Empty })) })) };
-    assert_eq!(list.pop(), Some(32));
-    assert_eq!(list.pop(), Some(23));
-    assert_eq!(list.pop(), None);
+        // Populate list
+        list.push(1);
+        list.push(2);
+        list.push(3);
+
+        // Check normal removal
+        assert_eq!(list.pop(), Some(3));
+        assert_eq!(list.pop(), Some(2));
+
+        // Push some more just to make sure nothing's corrupted
+        list.push(4);
+        list.push(5);
+
+        // Check normal removal
+        assert_eq!(list.pop(), Some(5));
+        assert_eq!(list.pop(), Some(4));
+
+        // Check exhaustion
+        assert_eq!(list.pop(), Some(1));
+        assert_eq!(list.pop(), None);
+    }
 }
