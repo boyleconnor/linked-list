@@ -9,34 +9,31 @@ impl<T> List<T> {
     pub fn push(&mut self, value: T) {
         let new_node = Box::new(Node {
             element: value,
-            next: mem::replace(&mut self.head, Link::Empty)
+            next: self.head.take()
         });
-        self.head = Link::More(new_node);
+        self.head = Some(new_node);
     }
 
     pub fn pop(&mut self) -> Option<T> {
-        match mem::replace(&mut self.head, Link::Empty) {
-            Link::More(boxed_node) => {
-                self.head = boxed_node.next;
-                Some(boxed_node.element)
-            }
-            Link::Empty => None
-        }
+        self.head.take().map(|boxed_node| {
+            self.head = boxed_node.next;
+            boxed_node.element
+        })
     }
 
     pub fn new() -> Self {
-        List { head: Link::Empty }
+        List { head: None }
     }
 }
 
 impl<T> Drop for List<T> {
     fn drop(&mut self) {
-        let mut cur_link = mem::replace(&mut self.head, Link::Empty);
+        let mut cur_link = mem::replace(&mut self.head, None);
         // `while let` == "do this thing until this pattern doesn't match"
-        while let Link::More(mut boxed_node) = cur_link {
-            cur_link = mem::replace(&mut boxed_node.next, Link::Empty);
+        while let Some(mut boxed_node) = cur_link {
+            cur_link = boxed_node.next.take();
             // boxed_node goes out of scope and gets dropped here;
-            // but its Node's `next` field has been set to Link::Empty
+            // but its Node's `next` field has been set to None
             // so no unbounded recursion occurs.
         }
     }
@@ -48,11 +45,7 @@ struct Node<T> {
     next: Link<T>
 }
 
-#[derive(Debug)]
-enum Link<T> {
-    More(Box<Node<T>>),
-    Empty
-}
+type Link<T> = Option<Box<Node<T>>>;
 
 #[cfg(test)]
 mod test {
