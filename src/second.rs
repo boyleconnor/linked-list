@@ -37,6 +37,10 @@ impl<T> List<T> {
         IntoIter(self)
     }
 
+    pub fn iter(&self) -> Iter<T> {
+        Iter { next: self.head.as_deref() }
+    }
+
     pub fn new() -> Self {
         List { head: None }
     }
@@ -61,6 +65,20 @@ impl<T> Iterator for IntoIter<T> {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         self.0.pop()
+    }
+}
+
+pub struct Iter<'a, T> {
+    next: Option<&'a Node<T>>
+}
+
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next.map(|node| {
+            self.next = node.next.as_deref();
+            &node.element
+        })
     }
 }
 
@@ -105,7 +123,7 @@ mod test {
     }
 
     #[test]
-    fn iterate() {
+    fn into_iter() {
         let mut list = List::new();
         let values = vec![3, 13, 32, 21];
         for value in &values {
@@ -113,10 +131,27 @@ mod test {
         }
 
         let mut i = 0;
-        for item in list {
+        for item in list.into_iter() {
             assert_eq!(item, values[values.len()-i-1]);
             i += 1
         }
+    }
+
+    #[test]
+    fn iter() {
+        let mut list = List::new();
+        let values = vec![3, 13, 32, 21];
+        for value in &values {
+            list.push(value.clone());
+        }
+
+        let mut i = 0;
+        for item in (&list).iter() {
+            assert_eq!(*item, values[values.len()-i-1]);
+            i += 1
+        }
+
+        assert_eq!(list.peek(), Some(&values[values.len()-1]))
     }
 
     #[test]
