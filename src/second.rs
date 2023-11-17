@@ -33,6 +33,10 @@ impl<T> List<T> {
         })
     }
 
+    pub fn into_iter(mut self) -> IntoIter<T> {
+        IntoIter(self)
+    }
+
     pub fn new() -> Self {
         List { head: None }
     }
@@ -48,6 +52,15 @@ impl<T> Drop for List<T> {
             // but its Node's `next` field has been set to None
             // so no unbounded recursion occurs.
         }
+    }
+}
+
+pub struct IntoIter<T>(List<T>);
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.pop()
     }
 }
 
@@ -89,6 +102,21 @@ mod test {
         // Check exhaustion
         assert_eq!(list.pop(), Some(1));
         assert_eq!(list.pop(), None);
+    }
+
+    #[test]
+    fn iterate() {
+        let mut list = List::new();
+        let values = vec![3, 13, 32, 21];
+        for value in &values {
+            list.push(value.clone());
+        }
+
+        let mut i = 0;
+        for item in list {
+            assert_eq!(item, values[values.len()-i-1]);
+            i += 1
+        }
     }
 
     #[test]
