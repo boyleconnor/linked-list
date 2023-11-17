@@ -33,7 +33,7 @@ impl<T> List<T> {
         })
     }
 
-    pub fn into_iter(mut self) -> IntoIter<T> {
+    pub fn into_iter(self) -> IntoIter<T> {
         IntoIter(self)
     }
 
