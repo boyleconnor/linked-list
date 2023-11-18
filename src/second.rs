@@ -184,7 +184,13 @@ mod test {
             *item += 1;
         }
 
-        assert_eq!(list.peek(), Some(values[values.len()-1]+1).as_ref())
+        assert_eq!(list.peek(), Some(values[values.len()-1]+1).as_ref());
+
+        let mut i = 0;
+        for item in list.iter() {
+            i += 1;
+            assert_eq!(values[values.len()-i] + 1, *item);
+        }
     }
 
     #[test]
