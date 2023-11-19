@@ -100,11 +100,30 @@ impl<T: Debug> List<T> {
             RefMut::map(rc_node.borrow_mut(), |node| &mut node.element)
         })
     }
+
+    pub fn into_iter(self) -> IntoIter<T> {
+        IntoIter(self)
+    }
 }
 
 impl<T: Debug> Drop for List<T> {
     fn drop(&mut self) {
         while self.pop_head().is_some() {}
+    }
+}
+
+pub struct IntoIter<T: Debug>(List<T>);
+
+impl<T: Debug> Iterator for IntoIter<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.pop_head()
+    }
+}
+
+impl<T: Debug> DoubleEndedIterator for IntoIter<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.pop_tail()
     }
 }
 
@@ -201,4 +220,18 @@ mod test {
         list.pop_head();
         assert_eq!(list.peek_head().unwrap().deref(), &5);
     }
+
+    #[test]
+    fn into_iter() {
+        let mut list = List::new();
+        list.push_head(1); list.push_head(2); list.push_head(3);
+
+        let mut iter = list.into_iter();
+        assert_eq!(iter.next(), Some(3));
+        assert_eq!(iter.next_back(), Some(1));
+        assert_eq!(iter.next(), Some(2));
+        assert_eq!(iter.next_back(), None);
+        assert_eq!(iter.next(), None);
+    }
+
 }
