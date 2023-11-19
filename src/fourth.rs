@@ -1,8 +1,9 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::fmt::Debug;
 
 #[derive(Debug)]
-pub struct List<T> {
+pub struct List<T: Debug> {
     head: Link<T>,
     tail: Link<T>
 }
@@ -16,7 +17,7 @@ pub struct Node<T> {
     element: T
 }
 
-impl<T> List<T> {
+impl<T: Debug> List<T> {
     pub fn new() -> List<T> {
         List { head: None, tail: None }
     }
@@ -35,6 +36,21 @@ impl<T> List<T> {
         if self.tail.is_none() {
             self.tail = self.head.clone();
         }
+    }
+
+    pub fn pop_head(&mut self) -> Option<T> {
+        self.head.take().map(|old_head| {
+            match old_head.borrow_mut().next.take() {
+                Some(new_head) => {
+                    new_head.borrow_mut().previous.take();
+                    self.head = Some(new_head);
+                }
+                None => {
+                    self.tail.take();
+                }
+            };
+            Rc::try_unwrap(old_head).ok().unwrap().into_inner().element
+        })
     }
 }
 
