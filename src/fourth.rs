@@ -40,16 +40,13 @@ impl<T: Debug> List<T> {
 
     pub fn pop_head(&mut self) -> Option<T> {
         self.head.take().map(|old_head| {
-            match old_head.borrow_mut().next.take() {
-                Some(new_head) => {
-                    new_head.borrow_mut().previous.take();
-                    self.head = Some(new_head);
-                }
-                None => {
-                    self.tail.take();
-                }
+            match old_head.borrow_mut().next.as_mut() {
+                Some(next_node) => {next_node.borrow_mut().previous.take();}
+                None => {self.tail.take();}
             };
-            Rc::try_unwrap(old_head).ok().unwrap().into_inner().element
+            let Node { next, previous: _, element } = Rc::try_unwrap(old_head).unwrap().into_inner();
+            self.head = next;
+            element
         })
     }
 }
@@ -69,5 +66,17 @@ mod test {
         assert_eq!(list.head.clone().unwrap().borrow().next.clone().unwrap().borrow().next.clone().unwrap().borrow().element, 4);
         assert_eq!(list.tail.clone().unwrap().borrow().element, 4);
         assert_eq!(list.tail.unwrap().borrow().previous.clone().unwrap().borrow().element, 3)
+    }
+
+    #[test]
+    fn pop_head() {
+        let mut list = List::new();
+        list.push_head(4);
+        list.push_head(3);
+        list.push_head(10);
+        assert_eq!(list.pop_head(), Some(10));
+        assert_eq!(list.pop_head(), Some(3));
+        assert_eq!(list.pop_head(), Some(4));
+        assert_eq!(list.pop_head(), None);
     }
 }
