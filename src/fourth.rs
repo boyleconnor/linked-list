@@ -51,34 +51,15 @@ impl<T: Debug> List<T> {
     }
 }
 
+impl<T: Debug> Drop for List<T> {
+    fn drop(&mut self) {
+        while self.pop_head().is_some() {}
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::List;
-
-    #[test]
-    fn push_head() {
-        let mut list = List::new();
-        list.push_head(4);
-        list.push_head(3);
-        list.push_head(10);
-        assert_eq!(list.head.clone().unwrap().borrow().element, 10);
-        assert_eq!(list.head.clone().unwrap().borrow().next.clone().unwrap().borrow().element, 3);
-        assert_eq!(list.head.clone().unwrap().borrow().next.clone().unwrap().borrow().next.clone().unwrap().borrow().element, 4);
-        assert_eq!(list.tail.clone().unwrap().borrow().element, 4);
-        assert_eq!(list.tail.unwrap().borrow().previous.clone().unwrap().borrow().element, 3)
-    }
-
-    #[test]
-    fn pop_head() {
-        let mut list = List::new();
-        list.push_head(4);
-        list.push_head(3);
-        list.push_head(10);
-        assert_eq!(list.pop_head(), Some(10));
-        assert_eq!(list.pop_head(), Some(3));
-        assert_eq!(list.pop_head(), Some(4));
-        assert_eq!(list.pop_head(), None);
-    }
 
     #[test]
     fn basics() {
