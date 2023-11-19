@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 use std::fmt::Debug;
 
 #[derive(Debug)]
@@ -49,6 +49,12 @@ impl<T: Debug> List<T> {
             element
         })
     }
+
+    pub fn peek_head(&self) -> Option<Ref<T>> {
+        self.head.as_ref().map(|rc_node| {
+            Ref::map(rc_node.borrow(), |node| &node.element)
+        })
+    }
 }
 
 impl<T: Debug> Drop for List<T> {
@@ -59,6 +65,7 @@ impl<T: Debug> Drop for List<T> {
 
 #[cfg(test)]
 mod test {
+    use std::ops::Deref;
     use super::List;
 
     #[test]
@@ -88,5 +95,21 @@ mod test {
         // Check exhaustion
         assert_eq!(list.pop_head(), Some(1));
         assert_eq!(list.pop_head(), None);
+    }
+
+    #[test]
+    fn peek() {
+        let mut list = List::new();
+        assert!(list.peek_head().is_none());
+
+        // The tutorial said to use `&*` instead of `.deref()`. I think `.deref()` looks nicer.
+        list.push_head(5);
+        assert_eq!(list.peek_head().unwrap().deref(), &5);
+
+        list.push_head(10);
+        assert_eq!(list.peek_head().unwrap().deref(), &10);
+
+        list.pop_head();
+        assert_eq!(list.peek_head().unwrap().deref(), &5);
     }
 }
