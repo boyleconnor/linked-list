@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use std::cell::{Ref, RefCell};
+use std::cell::{Ref, RefCell, RefMut};
 use std::fmt::Debug;
 
 #[derive(Debug)]
@@ -38,6 +38,21 @@ impl<T: Debug> List<T> {
         }
     }
 
+    pub fn push_tail(&mut self, element: T) {
+        let mut prev_tail = self.tail.clone();
+        self.tail = Some(Rc::from(RefCell::from(Node {
+            next: None,
+            previous: prev_tail.clone(),
+            element
+        })));
+        prev_tail.map(|rc_node| {
+            rc_node.borrow_mut().next = self.tail.clone();
+        });
+        if self.head.is_none() {
+            self.head = self.tail.clone();
+        }
+    }
+
     pub fn pop_head(&mut self) -> Option<T> {
         self.head.take().map(|old_head| {
             match old_head.borrow_mut().next.as_mut() {
@@ -50,9 +65,39 @@ impl<T: Debug> List<T> {
         })
     }
 
+    pub fn pop_tail(&mut self) -> Option<T> {
+        self.tail.take().map(|old_tail| {
+            match old_tail.borrow_mut().previous.as_mut() {
+                Some(previous_node) => {previous_node.borrow_mut().next.take();}
+                None => {self.head.take();}
+            };
+            let Node { previous, next: _, element } = Rc::try_unwrap(old_tail).unwrap().into_inner();
+            self.tail = previous;
+            element
+        })
+    }
+
     pub fn peek_head(&self) -> Option<Ref<T>> {
         self.head.as_ref().map(|rc_node| {
             Ref::map(rc_node.borrow(), |node| &node.element)
+        })
+    }
+
+    pub fn peek_tail(&self) -> Option<Ref<T>> {
+        self.tail.as_ref().map(|rc_node| {
+            Ref::map(rc_node.borrow(), |node| &node.element)
+        })
+    }
+
+    pub fn peek_head_mut(&mut self) -> Option<RefMut<T>> {
+        self.head.as_mut().map(|rc_node| {
+            RefMut::map(rc_node.borrow_mut(), |node| &mut node.element)
+        })
+    }
+
+    pub fn peek_tail_mut(&mut self) -> Option<RefMut<T>> {
+        self.tail.as_mut().map(|rc_node| {
+            RefMut::map(rc_node.borrow_mut(), |node| &mut node.element)
         })
     }
 }
@@ -95,6 +140,50 @@ mod test {
         // Check exhaustion
         assert_eq!(list.pop_head(), Some(1));
         assert_eq!(list.pop_head(), None);
+    }
+
+    #[test]
+    fn queue() {
+        let mut list = List::new();
+
+        list.push_tail(10);
+        list.push_tail(20);
+        list.push_tail(15);
+        list.push_tail(12);
+
+        assert_eq!(list.pop_head(), Some(10));
+        assert_eq!(list.pop_head(), Some(20));
+        assert_eq!(list.pop_head(), Some(15));
+        assert_eq!(list.pop_head(), Some(12));
+        assert_eq!(list.pop_head(), None);
+    }
+
+    #[test]
+    fn reverse_queue() {
+        let mut list = List::new();
+
+        list.push_head(10);
+        list.push_head(20);
+        list.push_head(15);
+        list.push_head(12);
+
+        assert_eq!(list.pop_tail(), Some(10));
+        assert_eq!(list.pop_tail(), Some(20));
+        assert_eq!(list.pop_tail(), Some(15));
+        assert_eq!(list.pop_tail(), Some(12));
+        assert_eq!(list.pop_tail(), None);
+    }
+
+    #[test]
+    fn peek_mut() {
+        let mut list = List::new();
+        list.push_head(23);
+        list.push_head(12);
+        list.push_head(92);
+        let head = list.peek_head_mut();
+        *head.unwrap() = 10;
+
+        assert_eq!(list.peek_head().unwrap().deref(), &10);
     }
 
     #[test]
