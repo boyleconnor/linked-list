@@ -79,4 +79,33 @@ mod test {
         assert_eq!(list.pop_head(), Some(4));
         assert_eq!(list.pop_head(), None);
     }
+
+    #[test]
+    fn basics() {
+        let mut list = List::new();
+
+        // Check empty list behaves right
+        assert_eq!(list.pop_head(), None);
+
+        // Populate list
+        list.push_head(1);
+        list.push_head(2);
+        list.push_head(3);
+
+        // Check normal removal
+        assert_eq!(list.pop_head(), Some(3));
+        assert_eq!(list.pop_head(), Some(2));
+
+        // Push some more just to make sure nothing's corrupted
+        list.push_head(4);
+        list.push_head(5);
+
+        // Check normal removal
+        assert_eq!(list.pop_head(), Some(5));
+        assert_eq!(list.pop_head(), Some(4));
+
+        // Check exhaustion
+        assert_eq!(list.pop_head(), Some(1));
+        assert_eq!(list.pop_head(), None);
+    }
 }
