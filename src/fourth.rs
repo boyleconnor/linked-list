@@ -24,7 +24,7 @@ impl<T: Debug> List<T> {
 
     // I implemented this differently from the tutorial
     pub fn push_head(&mut self, element: T) {
-        let mut prev_head = self.head.clone();
+        let prev_head = self.head.clone();
         self.head = Some(Rc::from(RefCell::from(Node {
             next: prev_head.clone(),
             previous: None,
@@ -39,7 +39,7 @@ impl<T: Debug> List<T> {
     }
 
     pub fn push_tail(&mut self, element: T) {
-        let mut prev_tail = self.tail.clone();
+        let prev_tail = self.tail.clone();
         self.tail = Some(Rc::from(RefCell::from(Node {
             next: None,
             previous: prev_tail.clone(),
