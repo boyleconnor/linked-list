@@ -2,10 +2,10 @@ use std::ptr;
 
 pub struct List<T> {
     head: Link<T>,
-    tail: *mut Node<T>
+    tail: Link<T>
 }
 
-type Link<T> = Option<Box<Node<T>>>;
+type Link<T> = *mut Node<T>;
 
 struct Node<T> {
     element: T,
@@ -14,37 +14,42 @@ struct Node<T> {
 
 impl<T> List<T> {
     pub fn new() -> Self {
-        List { head: None, tail: ptr::null_mut() }
+        List { head: ptr::null_mut(), tail: ptr::null_mut() }
     }
 
     pub fn push(&mut self, element: T) {
-        let mut new_tail = Box::new(Node {
+        let mut new_tail = Box::into_raw(Box::new(Node {
             element,
-            next: None
-        });
-
-        let raw_tail = &mut *new_tail as *mut Node<T>;
+            next: ptr::null_mut()
+        }));
 
         if !self.tail.is_null() {
-            unsafe { (*self.tail).next = Some(new_tail); }
+            unsafe { (*self.tail).next = new_tail; }
         } else {
-            self.head = Some(new_tail);
+            self.head = new_tail;
         }
 
-        self.tail = raw_tail;
+        self.tail = new_tail;
     }
 
     pub fn pop(&mut self) -> Option<T> {
-        self.head.take().map(|head| {
-            let head = *head;
-            self.head = head.next;
+        if !self.head.is_null() {
+            let old_head = self.head;
+            unsafe { self.head = (*old_head).next; }
 
-            if self.head.is_none() {
+            if self.head.is_null() {
                 self.tail = ptr::null_mut();
             }
 
-            head.element
-        })
+            let boxed_old_head = unsafe {
+                Box::from_raw(old_head)
+            };
+
+            Some(boxed_old_head.element)
+
+        } else {
+            None
+        }
     }
 }
 
