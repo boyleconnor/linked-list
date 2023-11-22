@@ -18,7 +18,7 @@ impl<T> List<T> {
     }
 
     pub fn push(&mut self, element: T) {
-        let mut new_tail = Box::into_raw(Box::new(Node {
+        let new_tail = Box::into_raw(Box::new(Node {
             element,
             next: ptr::null_mut()
         }));
