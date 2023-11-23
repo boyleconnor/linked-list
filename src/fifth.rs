@@ -61,6 +61,12 @@ impl<T> List<T> {
             Iter { next: self.head.as_ref() }
         }
     }
+
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+        unsafe {
+            IterMut { next: self.head.as_mut() }
+        }
+    }
 }
 
 impl<T> Drop for List<T> {
@@ -89,6 +95,22 @@ impl<'a, T> Iterator for Iter<'a, T> {
             self.next.map(|node| {
                 self.next = node.next.as_ref();
                 &node.element
+            })
+        }
+    }
+}
+
+pub struct IterMut<'a, T> {
+    next: Option<&'a mut Node<T>>
+}
+
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
+    fn next(&mut self) -> Option<Self::Item> {
+        unsafe {
+            self.next.take().map(|node| {
+                self.next = node.next.as_mut();
+                &mut node.element
             })
         }
     }
@@ -186,5 +208,24 @@ mod test {
         assert_eq!(iter.next(), Some(&19));
         assert_eq!(iter.next(), Some(&4));
         assert_eq!(iter.next(), None);
+    }
+    #[test]
+    fn iter_mut() {
+        let mut list = List::new();
+        list.push(3);
+        list.push(3);
+        list.push(19);
+        list.push(4);
+        let mut iter = list.iter_mut();
+
+        iter.next();
+        iter.next();
+        let x = iter.next();
+        assert_eq!(x, Some(&mut 19));
+        *(x.unwrap()) = 23;
+
+        list.pop();
+        list.pop();
+        assert_eq!(list.pop(), Some(23));
     }
 }
