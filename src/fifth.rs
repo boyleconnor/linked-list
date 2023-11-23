@@ -51,11 +51,24 @@ impl<T> List<T> {
             None
         }
     }
+
+    pub fn into_iter(self) -> IntoIter<T> {
+        IntoIter(self)
+    }
 }
 
 impl<T> Drop for List<T> {
     fn drop(&mut self) {
         while let Some(_) = self.pop() {}
+    }
+}
+
+pub struct IntoIter<T>(List<T>);
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<T> {
+        self.0.pop()
     }
 }
 
@@ -121,5 +134,19 @@ mod test {
         assert_eq!(list.pop(), Some(6));
         assert_eq!(list.pop(), Some(7));
         assert_eq!(list.pop(), None);
+    }
+
+    #[test]
+    fn into_iter() {
+        let mut list = List::new();
+        list.push(10);
+        list.push(12);
+        list.push(23);
+        let mut iter = list.into_iter();
+
+        assert_eq!(iter.next(), Some(10));
+        assert_eq!(iter.next(), Some(12));
+        assert_eq!(iter.next(), Some(23));
+        assert_eq!(iter.next(), None);
     }
 }
