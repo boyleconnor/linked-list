@@ -67,6 +67,16 @@ impl<T> List<T> {
             IterMut { next: self.head.as_mut() }
         }
     }
+
+    pub fn peek(&self) -> Option<&T> {
+        let node_option: Option<&Node<T>> = unsafe { self.head.as_ref() };
+        node_option.map(|node_ref| &node_ref.element)
+    }
+
+    pub fn peek_mut(&mut self) -> Option<&mut T> {
+        let node_option: Option<&mut Node<T>> = unsafe { self.head.as_mut() };
+        node_option.map(|node_ref| &mut node_ref.element)
+    }
 }
 
 impl<T> Drop for List<T> {
@@ -227,5 +237,33 @@ mod test {
         list.pop();
         list.pop();
         assert_eq!(list.pop(), Some(23));
+    }
+
+    #[test]
+    fn peek() {
+        let mut list = List::new();
+        assert_eq!(list.peek(), None);
+
+        list.push(10);
+        list.push(12);
+        list.push(8);
+
+        assert_eq!(list.peek(), Some(&10));
+    }
+
+    #[test]
+    fn peek_mut() {
+        let mut list = List::new();
+        assert_eq!(list.peek_mut(), None);
+
+        list.push(10);
+        list.push(12);
+        list.push(8);
+
+        let x = list.peek_mut().unwrap();
+        assert_eq!(x, &mut 10);
+        *x = 22;
+
+        assert_eq!(list.peek(), Some(&22));
     }
 }
