@@ -23,44 +23,38 @@ impl<T> LinkedList<T> {
 
     pub fn push_front(&mut self, element: T) {
         unsafe {
-            let new_node = NonNull::new_unchecked(Box::into_raw(Box::new(Node {
+            let new_head = NonNull::new_unchecked(Box::into_raw(Box::new(Node {
                 previous: None,
                 element,
                 next: None
             })));
-            if let Some(old_node) = self.head {
-                debug_assert!(self.length >= 1);
-                (*new_node.as_ptr()).next = Some(old_node);
-                (*old_node.as_ptr()).previous = Some(new_node);
+            if let Some(old_head) = self.head {
+                (*new_head.as_ptr()).next = Some(old_head);
+                (*old_head.as_ptr()).previous = Some(new_head);
             } else {
-                debug_assert!(self.head.is_none());
-                debug_assert!(self.tail.is_none());
-                debug_assert_eq!(self.length, 0);
-                self.tail = Some(new_node);
+                self.tail = Some(new_head);
             }
 
-            self.head = Some(new_node);
+            self.head = Some(new_head);
             self.length += 1;
         }
     }
 
     pub fn push_back(&mut self, element: T) {
         unsafe {
-            let new_node = NonNull::new_unchecked(Box::into_raw(Box::new(Node {
+            let new_tail = NonNull::new_unchecked(Box::into_raw(Box::new(Node {
                 previous: None,
                 element,
                 next: None
             })));
-            if let Some(tail_node) = self.tail {
-                (*tail_node.as_ptr()).next = Some(new_node);
+            if let Some(old_tail) = self.tail {
+                (*new_tail.as_ptr()).previous = Some(old_tail);
+                (*old_tail.as_ptr()).next = Some(new_tail);
             } else {
-                debug_assert_eq!(self.length, 0);
-                debug_assert!(self.head.is_none());
-                debug_assert!(self.tail.is_none());
-                self.head = Some(new_node);
+                self.head = Some(new_tail);
             }
 
-            self.tail = Some(new_node);
+            self.tail = Some(new_tail);
             self.length += 1;
         }
     }
@@ -69,15 +63,14 @@ impl<T> LinkedList<T> {
         self.head.map(|head_node| {
             unsafe {
                 let old_head = Box::from_raw(head_node.as_ptr());
-                self.head = old_head.next;
-                if let Some(new_head) = old_head.next {
+                self.head = old_head.next.map(|new_head| {
                     (*new_head.as_ptr()).previous = None;
-                    self.head = Some(new_head);
-                } else {
-                    debug_assert_eq!(self.length, 1);
-                    self.head = None;
+                    new_head
+                }).or_else(|| {
                     self.tail = None;
-                }
+                    None
+                });
+
                 self.length -= 1;
                 old_head.element
             }
@@ -86,18 +79,18 @@ impl<T> LinkedList<T> {
 
     pub fn pop_back(&mut self) -> Option<T> {
         self.tail.map(|tail_node| {
-            // FIXME: does dereferencing the tail ensure it gets dropped?
             unsafe {
-                let boxed_node = Box::from_raw(tail_node.as_ptr());
-                let new_tail = boxed_node.previous;
-                if let Some(new_tail_node) = new_tail {
-                    (*new_tail_node.as_ptr()).next = None;
-                } else {
-                    debug_assert_eq!(self.length, 1);
-                }
-                self.tail = new_tail;
+                let old_tail = Box::from_raw(tail_node.as_ptr());
+                self.tail = old_tail.previous.map(|new_tail| {
+                    (*new_tail.as_ptr()).next = None;
+                    new_tail
+                }).or_else(|| {
+                    self.head = None;
+                    None
+                });
+
                 self.length -= 1;
-                (*boxed_node).element
+                old_tail.element
             }
         })
     }
