@@ -44,6 +44,46 @@ impl<T> LinkedList<T> {
         }
     }
 
+    pub fn push_back(&mut self, element: T) {
+        unsafe {
+            let new_node = NonNull::new_unchecked(Box::into_raw(Box::new(Node {
+                previous: None,
+                element,
+                next: None
+            })));
+            if let Some(tail_node) = self.tail {
+                (*tail_node.as_ptr()).next = Some(new_node);
+            } else {
+                debug_assert_eq!(self.length, 0);
+                debug_assert!(self.head.is_none());
+                debug_assert!(self.tail.is_none());
+                self.head = Some(new_node);
+            }
+
+            self.tail = Some(new_node);
+            self.length += 1;
+        }
+    }
+
+    pub fn pop_front(&mut self) -> Option<T> {
+        self.head.map(|head_node| {
+            unsafe {
+                let old_head = Box::from_raw(head_node.as_ptr());
+                self.head = old_head.next;
+                if let Some(new_head) = old_head.next {
+                    (*new_head.as_ptr()).previous = None;
+                    self.head = Some(new_head);
+                } else {
+                    debug_assert_eq!(self.length, 1);
+                    self.head = None;
+                    self.tail = None;
+                }
+                self.length -= 1;
+                old_head.element
+            }
+        })
+    }
+
     pub fn pop_back(&mut self) -> Option<T> {
         self.tail.map(|tail_node| {
             // FIXME: does dereferencing the tail ensure it gets dropped?
@@ -60,6 +100,10 @@ impl<T> LinkedList<T> {
                 (*boxed_node).element
             }
         })
+    }
+
+    pub fn len(&self) -> usize {
+        self.length
     }
 }
 
@@ -80,5 +124,44 @@ mod test {
         assert_eq!(list.pop_back(), Some(4));
         assert_eq!(list.pop_back(), None);
     }
-}
 
+    #[test]
+    fn test_basic_front() {
+        let mut list = LinkedList::new();
+
+        // Try to break an empty list
+        assert_eq!(list.len(), 0);
+        assert_eq!(list.pop_front(), None);
+        assert_eq!(list.len(), 0);
+
+        // Try to break a one item list
+        list.push_front(10);
+        assert_eq!(list.len(), 1);
+        assert_eq!(list.pop_front(), Some(10));
+        assert_eq!(list.len(), 0);
+        assert_eq!(list.pop_front(), None);
+        assert_eq!(list.len(), 0);
+
+        // Mess around
+        list.push_front(10);
+        assert_eq!(list.len(), 1);
+        list.push_front(20);
+        assert_eq!(list.len(), 2);
+        list.push_front(30);
+        assert_eq!(list.len(), 3);
+        assert_eq!(list.pop_front(), Some(30));
+        assert_eq!(list.len(), 2);
+        list.push_front(40);
+        assert_eq!(list.len(), 3);
+        assert_eq!(list.pop_front(), Some(40));
+        assert_eq!(list.len(), 2);
+        assert_eq!(list.pop_front(), Some(20));
+        assert_eq!(list.len(), 1);
+        assert_eq!(list.pop_front(), Some(10));
+        assert_eq!(list.len(), 0);
+        assert_eq!(list.pop_front(), None);
+        assert_eq!(list.len(), 0);
+        assert_eq!(list.pop_front(), None);
+        assert_eq!(list.len(), 0);
+    }
+}
