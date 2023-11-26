@@ -122,11 +122,81 @@ impl<T> LinkedList<T> {
     pub fn len(&self) -> usize {
         self.length
     }
+
+    pub fn iter(&self) -> Iter<T> {
+        Iter {
+            head: self.head,
+            tail: self.tail,
+            length: self.length,
+            _boo: PhantomData
+        }
+    }
 }
 
 impl<T> Drop for LinkedList<T> {
     fn drop(&mut self) {
         while let Some(_) = self.pop_front() {};
+    }
+}
+
+impl<'a, T> IntoIterator for &'a LinkedList<T> {
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub struct Iter<'a, T> {
+    head: Link<T>,
+    tail: Link<T>,
+    length: usize,
+    _boo: PhantomData<&'a T>
+}
+
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.length >= 1 {
+            self.head.map(|head_ptr| {
+                unsafe {
+                    let old_head = &*head_ptr.as_ptr();
+                    self.head = old_head.next;
+                    self.length -= 1;
+                    &old_head.element
+                }
+            })
+        } else {
+            None
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.length, Some(self.length))
+    }
+}
+
+impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.length >= 1 {
+            self.tail.map(|tail_ptr| {
+                unsafe {
+                    let old_tail = &*tail_ptr.as_ptr();
+                    self.tail = old_tail.previous;
+                    self.length -= 1;
+                    &old_tail.element
+                }
+            })
+        } else {
+            None
+        }
+    }
+}
+
+impl<'a, T> ExactSizeIterator for Iter<'a, T> {
+    fn len(&self) -> usize {
+       self.length
     }
 }
 
@@ -221,5 +291,50 @@ mod test {
         assert_eq!(list.len(), 0);
         assert_eq!(list.pop_front(), None);
         assert_eq!(list.len(), 0);
+    }
+
+    #[test]
+    fn iter() {
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        list.push_back(4);
+        list.push_back(5);
+        list.push_back(6);
+        list.push_back(7);
+
+        let mut iter = list.iter();
+        assert_eq!(iter.next(), Some(&1));
+        assert_eq!(iter.next(), Some(&2));
+        assert_eq!(iter.next(), Some(&3));
+        assert_eq!(iter.next(), Some(&4));
+        assert_eq!(iter.next(), Some(&5));
+        assert_eq!(iter.next(), Some(&6));
+        assert_eq!(iter.next(), Some(&7));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn double_iter() {
+        let mut list = LinkedList::new();
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        list.push_back(4);
+        list.push_back(5);
+        list.push_back(6);
+        list.push_back(7);
+
+        let mut iter = list.iter();
+        assert_eq!(iter.next(), Some(&1));
+        assert_eq!(iter.next(), Some(&2));
+        assert_eq!(iter.next_back(), Some(&7));
+        assert_eq!(iter.next_back(), Some(&6));
+        assert_eq!(iter.next(), Some(&3));
+        assert_eq!(iter.next_back(), Some(&5));
+        assert_eq!(iter.next(), Some(&4));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next_back(), None);
     }
 }
