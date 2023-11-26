@@ -95,8 +95,38 @@ impl<T> LinkedList<T> {
         })
     }
 
+    pub fn front(&self) -> Option<&T> {
+        self.head.map(|head_node| {
+            unsafe { &(*head_node.as_ptr()).element }
+        })
+    }
+
+    pub fn front_mut(&mut self) -> Option<&mut T> {
+        self.head.map(|head_node| {
+            unsafe { &mut (*head_node.as_ptr()).element }
+        })
+    }
+
+    pub fn back(&self) -> Option<&T> {
+        self.tail.map(|tail_node| {
+            unsafe { &(*tail_node.as_ptr()).element }
+        })
+    }
+
+    pub fn back_mut(&mut self) -> Option<&mut T> {
+        self.tail.map(|tail_node| {
+            unsafe { &mut (*tail_node.as_ptr()).element }
+        })
+    }
+
     pub fn len(&self) -> usize {
         self.length
+    }
+}
+
+impl<T> Drop for LinkedList<T> {
+    fn drop(&mut self) {
+        while let Some(_) = self.pop_front() {};
     }
 }
 
@@ -116,6 +146,41 @@ mod test {
         assert_eq!(list.pop_back(), Some(2));
         assert_eq!(list.pop_back(), Some(4));
         assert_eq!(list.pop_back(), None);
+    }
+
+    #[test]
+    fn test_peek() {
+        let mut list = LinkedList::new();
+        assert_eq!(list.front(), None);
+        assert_eq!(list.front_mut(), None);
+        assert_eq!(list.back(), None);
+        assert_eq!(list.back_mut(), None);
+
+        list.push_front(3);
+        list.push_front(2);
+        list.push_back(4);
+        list.push_back(5);
+        list.push_front(1);
+        list.push_back(6);
+
+        assert_eq!(list.front(), Some(&1));
+        assert_eq!(list.front_mut(), Some(&mut 1));
+        assert_eq!(list.back(), Some(&6));
+        assert_eq!(list.back_mut(), Some(&mut 6));
+
+        *list.front_mut().unwrap() = -1;
+        *list.back_mut().unwrap() = -6;
+
+        assert_eq!(list.front(), Some(&-1));
+        assert_eq!(list.front_mut(), Some(&mut -1));
+        assert_eq!(list.back(), Some(&-6));
+        assert_eq!(list.back_mut(), Some(&mut -6));
+
+        list.push_front(0);
+        list.push_back(0);
+
+        assert_eq!(list.front(), Some(&0));
+        assert_eq!(list.back(), Some(&0));
     }
 
     #[test]
