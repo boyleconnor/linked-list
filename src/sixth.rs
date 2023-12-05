@@ -132,6 +132,15 @@ impl<T> LinkedList<T> {
         }
     }
 
+    pub fn iter_mut(&mut self) -> IterMut<T> {
+        IterMut {
+            head: self.head,
+            tail: self.tail,
+            length: self.length,
+            _boo: PhantomData
+        }
+    }
+
     pub fn into_iter(self) -> IntoIter<T> {
         IntoIter { list: self }
     }
@@ -201,6 +210,58 @@ impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
 impl<'a, T> ExactSizeIterator for Iter<'a, T> {
     fn len(&self) -> usize {
        self.length
+    }
+}
+
+pub struct IterMut<'a, T> {
+    head: Link<T>,
+    tail: Link<T>,
+    length: usize,
+    _boo: PhantomData<&'a T>
+}
+
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.length >= 1 {
+            self.head.map(|head_ptr| {
+                unsafe {
+                    let old_head = &mut *head_ptr.as_ptr();
+                    self.head = old_head.next;
+                    self.length -= 1;
+                    &mut old_head.element
+                }
+            })
+        } else {
+            None
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.length, Some(self.length))
+    }
+}
+
+impl<'a, T> DoubleEndedIterator for IterMut<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.length >= 1 {
+            self.tail.map(|tail_ptr| {
+                unsafe {
+                    let old_tail = &mut *tail_ptr.as_ptr();
+                    self.tail = old_tail.previous;
+                    self.length -= 1;
+                    &mut old_tail.element
+                }
+            })
+        } else {
+            None
+        }
+    }
+}
+
+impl<'a, T> ExactSizeIterator for IterMut<'a, T> {
+    fn len(&self) -> usize {
+        self.length
     }
 }
 
@@ -381,5 +442,29 @@ mod test {
         assert_eq!(iter.next_back(), Some(8));
         assert_eq!(iter.next_back(), Some(3));
         assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn iter_mut() {
+        let mut list = LinkedList::new();
+
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        list.push_back(4);
+        list.push_back(5);
+        list.push_back(6);
+
+        let mut list_iter = list.iter_mut();
+        list_iter.next();
+        list_iter.next();
+        list_iter.next();
+        *list_iter.next().unwrap() = 22;
+
+        let mut list_iter = list.iter();
+        list_iter.next();
+        list_iter.next();
+        list_iter.next();
+        assert_eq!(*list_iter.next().unwrap(), 22);
     }
 }
