@@ -123,6 +123,14 @@ impl<T> LinkedList<T> {
         self.length
     }
 
+    pub fn clear(&mut self) {
+        while let Some(_) = self.pop_front() {};
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.length == 0
+    }
+
     pub fn iter(&self) -> Iter<T> {
         Iter {
             head: self.head,
