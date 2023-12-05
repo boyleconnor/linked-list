@@ -131,6 +131,10 @@ impl<T> LinkedList<T> {
             _boo: PhantomData
         }
     }
+
+    pub fn into_iter(self) -> IntoIter<T> {
+        IntoIter { list: self }
+    }
 }
 
 impl<T> Drop for LinkedList<T> {
@@ -200,9 +204,34 @@ impl<'a, T> ExactSizeIterator for Iter<'a, T> {
     }
 }
 
+pub struct IntoIter<T> {
+    list: LinkedList<T>
+}
+
+impl<T> IntoIterator for LinkedList<T> {
+    type Item = T;
+    type IntoIter = IntoIter<T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.into_iter()
+    }
+}
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+       self.list.pop_front()
+    }
+}
+
+impl<T> DoubleEndedIterator for IntoIter<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.list.pop_back()
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use super::LinkedList;
+    use super::{Link, LinkedList};
 
     #[test]
     fn basics() {
@@ -336,5 +365,21 @@ mod test {
         assert_eq!(iter.next(), Some(&4));
         assert_eq!(iter.next(), None);
         assert_eq!(iter.next_back(), None);
+    }
+
+    #[test]
+    fn into_iter() {
+        let mut list = LinkedList::new();
+        list.push_back(5);
+        list.push_back(10);
+        list.push_back(3);
+        list.push_back(8);
+
+        let mut iter = list.into_iter();
+        assert_eq!(iter.next(), Some(5));
+        assert_eq!(iter.next(), Some(10));
+        assert_eq!(iter.next_back(), Some(8));
+        assert_eq!(iter.next_back(), Some(3));
+        assert_eq!(iter.next(), None);
     }
 }
