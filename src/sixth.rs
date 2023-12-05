@@ -231,7 +231,7 @@ impl<T> DoubleEndedIterator for IntoIter<T> {
 
 #[cfg(test)]
 mod test {
-    use super::{Link, LinkedList};
+    use super::LinkedList;
 
     #[test]
     fn basics() {
