@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
@@ -157,6 +158,54 @@ impl<T> LinkedList<T> {
 impl<T> Drop for LinkedList<T> {
     fn drop(&mut self) {
         while let Some(_) = self.pop_front() {};
+    }
+}
+
+impl<T> Default for LinkedList<T> {
+    fn default() -> Self {
+        LinkedList::new()
+    }
+}
+
+impl<T: Clone> Clone for LinkedList<T> {
+    fn clone(&self) -> Self {
+        let mut new_list = Self::new();
+        for value in self.iter() {
+            new_list.push_back(value.clone());
+        }
+        new_list
+    }
+}
+
+impl<T> Extend<T> for LinkedList<T> {
+    fn extend<I: IntoIterator<Item=T>>(&mut self, iter: I) {
+        for item in iter {
+            self.push_back(item);
+        }
+    }
+}
+
+impl<T> FromIterator<T> for LinkedList<T> {
+    fn from_iter<I: IntoIterator<Item=T>>(iter: I) -> Self {
+        let mut list = LinkedList::new();
+        list.extend(iter);
+        list
+    }
+}
+
+impl<T: Debug> Debug for LinkedList<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_list().entries(self).finish()
+    }
+}
+
+impl<T: PartialEq> PartialEq for LinkedList<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.len() == other.len() && self.iter().eq(other)
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        self.len() != other.len() || self.iter().ne(other)
     }
 }
 
@@ -474,5 +523,41 @@ mod test {
         list_iter.next();
         list_iter.next();
         assert_eq!(*list_iter.next().unwrap(), 22);
+    }
+
+    #[test]
+    fn clone() {
+        let mut list1 = LinkedList::new();
+        list1.push_back(2);
+        list1.push_back(1);
+        list1.push_back(3);
+
+        let list2 = list1.clone();
+        list1.push_back(5);
+        assert_eq!(list2.back(), Some(&3));
+        assert_eq!(list1.back(), Some(&5))
+    }
+
+    #[test]
+    fn partial_eq() {
+        let mut list1 = LinkedList::new();
+        let mut list2 = LinkedList::new();
+        assert_eq!(list1, list2);
+
+        for i in 0..5 {
+            list1.push_back(i);
+            assert_ne!(list1, list2);
+        }
+
+        list2.push_back(0);
+        assert_ne!(list1, list2);
+        list2.push_back(1);
+        assert_ne!(list1, list2);
+        list2.push_back(2);
+        assert_ne!(list1, list2);
+        list2.push_back(3);
+        assert_ne!(list1, list2);
+        list2.push_back(4);
+        assert_eq!(list1, list2);
     }
 }
